@@ -12,11 +12,12 @@ title:       Baurine's Blog
 description: > # this means to ignore newlines until "links:"
   Work hard, Enjoy life.
 signoff:     Baurine
+img_url:     /assets/images
 links:
   - name:         Blog
     url:          /
   - name:         GitHub
-    url:          http://github.com/baurine
+    url:          https://github.com/baurine
     external:     true
   - name:         About
     url:          /about
