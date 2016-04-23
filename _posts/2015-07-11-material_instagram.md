@@ -28,9 +28,8 @@ tags: [material, instagram]
 
 项目中用到的图片资源皆来自作者项目及[花瓣网](http://huaban.com/)，如有侵权本人会马上删除。
 
-接下来的计划，我想在这个项目的 UI 基础上，尝试使用 [LeanCloud SDK](https://leancloud.cn/) 来实现真正的功能，包括登录，发布照片，点赞，评论，关注等，并仿照作者写成一系列的教程，敬请期待。
-
 #### 截图
+
 Feeds
 
 ![01_feeds](https://raw.githubusercontent.com/baurine/instagram-material/master/apk/01_feeds.jpg)
@@ -64,6 +63,7 @@ SendingPhoto
 ![08_sending_photo](https://raw.githubusercontent.com/baurine/instagram-material/master/apk/08_sending_photo.jpg)
 
 #### MX 上按钮异常的解决办法
+
 拍照按钮异常 (正常的情况看上面的截图)
 
 ![abnormal_01](https://raw.githubusercontent.com/baurine/instagram-material/master/apk/abnormal_01.jpg)
@@ -101,8 +101,7 @@ SendingPhoto
 
 ![abnormal_02](https://raw.githubusercontent.com/baurine/instagram-material/master/apk/abnormal_02.jpg)
 
-解决办法：  
-我觉得作者的实现稍微复杂，作者是在底层绘制了一个 rectangle，然后在顶层用白色边框包围住底层的 rectangle。解决办法同上，需要把顶层缕空部分声明为 transparent，但我自己换了一种实现方法，先在底层绘制了纯色的 rectangle，然后在它下面绘制了一条相同颜色的 line。实现代码 (摘自 `switch_publish_followers.xml`)：
+解决办法：我觉得作者的实现稍微复杂，作者是在底层绘制了一个 rectangle，然后在顶层用白色边框包围住底层的 rectangle。解决办法同上，需要把顶层缕空部分声明为 transparent，但我自己换了一种实现方法，先在底层绘制了纯色的 rectangle，然后在它下面绘制了一条相同颜色的 line。实现代码 (摘自 `switch_publish_followers.xml`)：
 
     <layer-list>
         <item android:bottom="8dp" android:top="8dp">
