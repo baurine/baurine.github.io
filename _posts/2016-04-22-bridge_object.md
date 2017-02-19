@@ -3,7 +3,7 @@ layout: post
 title: "编程中的桥梁对象"
 description: ""
 category: 
-tags: [Github pages, Jekyll 3, Scribble]
+tags: []
 ---
 
 Python:
