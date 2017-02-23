@@ -56,5 +56,3 @@ contains a [note](https://github.com/baurine/simple-pull-refresh-layout/blob/mas
 
 1. [Vim](https://github.com/baurine/study-note/blob/master/tools/vim.md)
 1. [VS Code](https://github.com/baurine/study-note/blob/master/tools/vscode.md)
-1. TODO: Git
-1. ...
