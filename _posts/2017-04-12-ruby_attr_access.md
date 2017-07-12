@@ -40,20 +40,33 @@ Ruby 的类的成员变量的定义方式是 `@variable`，但是在类外部，
       end
     end
 
-`attr_reader` 定义的成员变量，可以在外部被访问，但不能在外部被修改，只能在内部被修改。`attr_reader :name` 等价于：
+`attr_reader` 定义的成员变量，可以在外部被读取，但不能在外部被修改，只能在内部被修改。`attr_reader :name` 等价于：
 
     def name
       @name
     end
  
-`attr_reader` 定义的成员变量在内部的访问方法：
+`attr_reader` 定义的成员变量在内部的使用方法：
 
-    @name = 'bar'
+- 读取
 
-如果在内部访问时不加 `@`，那么实际访问的是局部变量
+        def test
+          # 两者效果相同
+          puts @name
+          puts name  # name 是方法
+        end
 
-    # 局部变量
-    name = 'bar'
+- 修改
+
+        @name = 'bar'
+
+如果在内部修改时没有加上 `@`，那么实际上创建了新的局部变量：
+
+    def test
+      puts name    # 此时 name 是方法，将输出 @name 的值
+      name = 'bar' # 创建了新的局部变量 name，值为 bar
+      puts name    # 输出 bar
+    end
 
 在外部访问的方式：
 
@@ -62,7 +75,7 @@ Ruby 的类的成员变量的定义方式是 `@variable`，但是在类外部，
 
     f.name = 'foo' # ERROR! 不能被修改，不存在 f.name= 方法
 
-`attr_writer` 定义的成员变量，可以在外部被修改，但不能在外部被访问。`attr_writer :age` 等价于：
+`attr_writer` 定义的成员变量，可以在外部被修改，但不能在外部被读取。`attr_writer :age` 等价于：
 
     def age=(val)
       @age = val
@@ -81,15 +94,15 @@ Ruby 的类的成员变量的定义方式是 `@variable`，但是在类外部，
     # or
     self.age = 40
 
-    # 局部变量
+    # 创建了新的局部变量
     age = 40
 
-`attr_accessor` 定义的成员变量，既可以在外部被访问，也可以被修改。`attr_accessor :gender` 等价于：
+`attr_accessor` 定义的成员变量，既可以在外部被读取，也可以被修改。`attr_accessor :gender` 等价于：
 
     def gender
       @gender
     end
-    
+
     def gender=(val)
       @gender = val
     end
