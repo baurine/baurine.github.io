@@ -3,7 +3,7 @@ layout: post
 title: "从 Dropdown 的 React 实现中学习到的"
 description: ""
 category:
-tags: [drag and drop, html5]
+tags: [dropdown, react]
 ---
 
 ## Demo
