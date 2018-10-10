@@ -6,7 +6,7 @@ category:
 tags: [rails, turbolinks, uninterrupted audio player]
 ---
 
-在网页切换时要想实现音乐播放器的不间断播放，常见的有这么几种解决方案：SPA，pajx，iframe。
+在网页切换时要想实现音乐播放器的不间断播放，常见的有这么几种解决方案：SPA，pajax，iframe。
 
 以上这几种我都没用过，所以今天只介绍我自己在项目中尝试的一种解决方案，用 Turbolinks。这种方案可用于传统的非前后端分离的网站。
 
