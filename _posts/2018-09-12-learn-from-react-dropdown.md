@@ -60,7 +60,8 @@ React 有两套事件系统，一套是原生事件系统，就是 `document.add
 所以，为了在 React 的 dropdown 中实现点击 menu 外部收起 menu，点击内部不收起 menu，有两种办法：
 
 1. 使用 `window.addEventLister('click', handler)` 替代 `document.addEventListener('click', handler)`，同时在 menu 内部点击时，调用合成事件的 `event.stopPropagation()`
-1. 不调用 `event.stopPropagation()`，让事件冒泡到全局 (document 或 window 皆可) 的 click handler 中，在 handler 中判断 `event.target` 中在 menu 内部还是外部，使用 `DOMNode.contains()` 方法判断。这种方法需要用 React 的 ref 属性把 menu 的引用保存下来，如下所示：
+
+1. 不调用 `event.stopPropagation()`，让事件冒泡到 document 的 click handler 中，在 handler 中判断 `event.target` 中在 menu 内部还是外部，使用 `DOMNode.contains()` 方法判断。这种方法需要用 React 的 ref 属性把 menu 的引用保存下来，如下所示：
 
         <div className="dropdown-body" ref={ref=>this._dropdown_body=ref}>
 
@@ -125,3 +126,245 @@ React 有两套事件系统，一套是原生事件系统，就是 `document.add
           // important! we need remove global click handler when unmout
           document.removeEventListener('click', this.handleGlobalClick)
         }
+
+### Update
+
+自从发现用 `window.addEventListener('click', handler)` 可以很方便地用来实现收起 React 中的 Dropdown 后，我就不亦乐乎的到处用起来了。为了避免写无数遍的 `window.addEventLister('click', handler)`，我封装了一个 NativeClickListener 的 Component，代码没几行，如下所示：
+
+    export default class NativeClickListener extends React.Component {
+      static propTypes = {
+        onClick: PropTypes.func
+      }
+
+      clickHandler = (event) => {
+        console.log('NativeClickListener click')
+        const { onClick } = this.props
+        onClick && onClick(event)
+      }
+
+      componentDidMount() {
+        window.addEventListener('click', this.clickHandler)
+      }
+
+      componentWillUnmount() {
+        window.removeEventListener('click', this.clickHandler)
+      }
+
+      render() {
+        return this.props.children
+      }
+    }
+
+使用：
+
+    <div className="dropdown-container">
+      <div className="dropdown-head">
+        <button onClick={this.handleHeadClick}>
+          {dropDownExpanded ? 'Collapse' : 'Open'} dropdown menu - 5
+        </button>
+      </div>
+      {
+        dropDownExpanded &&
+        <NativeClickListener onClick={()=>this.setState({dropDownExpanded: false})}>
+          <div className="dropdown-body"
+              onClick={this.handleBodyClick}>
+              ...
+          </div>
+        </NativeClickListener>
+      }
+    </div>
+
+    handleHeadClick = (event) => {
+      console.log('head click')
+      this.setState(prevState => ({dropDownExpanded: !prevState.dropDownExpanded}))
+      event.stopPropagation()
+    }
+    handleBodyClick = (event) => {
+      console.log('body click')
+      // just can stop event propagate from document to window
+      event.stopPropagation()
+    }
+
+后来我想，那其它开源的 React 组件库中的 Dropdown 都是怎么实现的呢，于是探究了一下，果然不出意外，也是用的原生的 addEventListener 实现的，但也有点意外的是，它们并没有用 window.addEventListener，而都是用了 document.addEventListener 和 node.contains 方法实现。
+
+1. [Material Kit React](https://demos.creative-tim.com/material-kit-react/#/)
+
+   这个组件库的 Dropdown 用到了 [@material-ui/core/ClickAwayListener](https://github.com/mui-org/material-ui/blob/master/packages/material-ui/src/ClickAwayListener/ClickAwayListener.js)，来看看它的实现。
+
+        handleClickAway = event => {
+          ...
+          if (
+            doc.documentElement &&
+            doc.documentElement.contains(event.target) &&
+            !this.node.contains(event.target)
+          ) {
+            this.props.onClickAway(event);
+          }
+        }
+
+        render() {
+          const { children, mouseEvent, touchEvent, onClickAway, ...other } = this.props;
+          const listenerProps = {};
+          if (mouseEvent !== false) {
+            listenerProps[mouseEvent] = this.handleClickAway;
+          }
+          if (touchEvent !== false) {
+            listenerProps[touchEvent] = this.handleClickAway;
+          }
+
+          return (
+            <React.Fragment>
+              {children}
+              <EventListener target="document" {...listenerProps} {...other} />
+            </React.Fragment>
+          );
+        }
+
+    addEventListener 的逻辑看来在 EventListener 中，来自 [react-event-listener](https://github.com/oliviertassinari/react-event-listener/blob/master/src/index.js) 库。而且从 `target="document"` 来看，event 是绑在 document 上的。
+
+        class EventListener extends React.PureComponent {
+          componentDidMount() {
+            this.applyListeners(on);
+          }
+          applyListeners(onOrOff, props = this.props) {
+            const { target } = props;
+
+            if (target) {
+              let element = target;
+
+              if (typeof target === 'string') {
+                element = window[target];
+              }
+
+              forEachListener(props, onOrOff.bind(null, element));
+          }
+          ...
+        }
+        function on(target, eventName, callback, options) {
+          // eslint-disable-next-line prefer-spread
+          target.addEventListener.apply(target, getEventListenerArgs(eventName, callback, options));
+        }
+        function off(target, eventName, callback, options) {
+          // eslint-disable-next-line prefer-spread
+          target.removeEventListener.apply(target, getEventListenerArgs(eventName, callback, options));
+        }
+
+1. Ant Design 中的 Dropdown 的实现最终可以追溯到 [react-component/trigger](https://github.com/react-component/trigger/blob/master/src/index.js) 组件。
+
+        // We must listen to `mousedown` or `touchstart`, edge case:
+        // https://github.com/ant-design/ant-design/issues/5804
+        // https://github.com/react-component/calendar/issues/250
+        // https://github.com/react-component/trigger/issues/50
+        if (state.popupVisible) {
+          let currentDocument;
+          if (!this.clickOutsideHandler && (this.isClickToHide() || this.isContextMenuToShow())) {
+            currentDocument = props.getDocument();
+            this.clickOutsideHandler = addEventListener(currentDocument,
+              'mousedown', this.onDocumentClick);
+          }
+          // always hide on mobile
+          if (!this.touchOutsideHandler) {
+            currentDocument = currentDocument || props.getDocument();
+            this.touchOutsideHandler = addEventListener(currentDocument,
+              'touchstart', this.onDocumentClick);
+          }
+          // close popup when trigger type contains 'onContextMenu' and document is scrolling.
+          if (!this.contextMenuOutsideHandler1 && this.isContextMenuToShow()) {
+            currentDocument = currentDocument || props.getDocument();
+            this.contextMenuOutsideHandler1 = addEventListener(currentDocument,
+              'scroll', this.onContextMenuClose);
+          }
+          // close popup when trigger type contains 'onContextMenu' and window is blur.
+          if (!this.contextMenuOutsideHandler2 && this.isContextMenuToShow()) {
+            this.contextMenuOutsideHandler2 = addEventListener(window,
+              'blur', this.onContextMenuClose);
+          }
+          return;
+        }
+
+        onDocumentClick = (event) => {
+          if (this.props.mask && !this.props.maskClosable) {
+            return;
+          }
+
+          const target = event.target;
+          const root = findDOMNode(this);
+          if (!contains(root, target) && !this.hasPopupMouseDown) {
+            this.close();
+          }
+        }
+
+1. JetBrain 的 ring-ui 的 [Dropdown](https://jetbrains.github.io/ring-ui/master/dropdown.html) 并没有实现在其它地方点击后让 Dropdown 收起的功能，有点意外...
+
+一开始不是很理解，不过后来我发现，如果用 `window.addEventListener('click', handler)` 的方式收起 Dropdown，在一个页面中，如果有多个 Dropdown，我先展开一个 Dropdown menu (称之为 A)，再点击另一个 Dropdown (称之为 B)，因为在 Dropdown B 的点击事件中调用了 `event.stopPropagation()`，因此 Dropdown A 的 global click handler 将无法触发，因此 Dropdown A 无法收起。
+
+![]({{site.img_url}}/react-dropdown/multiple-dropdown.gif)
+
+即使只有一个 Dropdown，如果页面中有其它任意地方的 event handler 中调用了 `event.stopPropagation()` 都会导致此 Dropdown 有可能无法收起。
+
+但是用 `document.addEventListener('click', handler)` 配合 `node.contains()` 方法却不会有这个问题，因此恍然大悟，终于明白了为什么那些开源组件库并没有采用 `window.addEventListener()` 的方式。
+
+于是实现 NativeClickListener2：
+
+    export default class NativeClickListener extends React.Component {
+      static propTypes = {
+        onClick: PropTypes.func
+      }
+
+      clickHandler = (event) => {
+        console.log('NativeClickListener click')
+        if(this._container.contains(event.target)) return
+
+        const { onClick } = this.props
+        onClick && onClick(event)
+      }
+
+      componentDidMount() {
+        document.addEventListener('click', this.clickHandler)
+      }
+
+      componentWillUnmount() {
+        document.removeEventListener('click', this.clickHandler)
+      }
+
+      render() {
+        return (
+          <div ref={ref=>this._container=ref}>
+            {this.props.children}
+          </div>
+        )
+      }
+    }
+
+使用：
+
+    <div className="dropdown-container">
+      <div className="dropdown-head">
+        <button onClick={this.handleHeadClick}>
+          {dropDownExpanded ? 'Collapse' : 'Open'} dropdown menu - 5
+        </button>
+      </div>
+      {
+        dropDownExpanded &&
+        <NativeClickListener2 onClick={()=>this.setState({dropDownExpanded: false})}>
+          <div className="dropdown-body"
+              onClick={this.handleBodyClick}>
+              ...
+          </div>
+        </NativeClickListener2>
+      }
+    </div>
+
+    handleHeadClick = (event) => {
+      console.log('head click')
+      this.setState(prevState => ({dropDownExpanded: !prevState.dropDownExpanded}))
+      // no need
+      // event.stopPropagation()
+    }
+    handleBodyClick = (event) => {
+      console.log('body click')
+      // no need
+      // event.stopPropagation()
+    }
+
+![]({{site.img_url}}/react-dropdown/native-click-listener-2.gif)
