@@ -21,6 +21,9 @@ links:
     external:     true
   # - name:         About
   #   url:          /about
+  - name:         New Blog
+    url:          https://baurine.netlify.com/
+    external:     true
 
 # Build settings
 markdown: kramdown
